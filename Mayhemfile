@@ -1,6 +1,6 @@
-project: rnshah9/cproc
+project: cproc
 target: cproc-qbe
 
 cmds:
-  - cmd: /cproc/cproc-qbe @@
+  - cmd: /cproc/cproc-qbe /test.c
     filepath: /test.c
