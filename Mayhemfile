@@ -2,4 +2,4 @@ project: cproc
 target: cproc-qbe
 
 cmds:
-  - cmd: /install/usr/bin/cproc-qbe @@
+  - cmd: /install/usr/local/bin/cproc-qbe @@
