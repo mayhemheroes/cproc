@@ -2,5 +2,4 @@ project: cproc
 target: cproc-qbe
 
 cmds:
-  - cmd: /cproc/cproc-qbe /test.c
-    filepath: /test.c
+  - cmd: /install/usr/bin/cproc-qbe @@
