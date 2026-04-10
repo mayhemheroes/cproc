@@ -1,18 +1,15 @@
-FROM --platform=linux/amd64 ubuntu:20.04 as builder
-RUN apt-get update
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y make gcc
+FROM --platform=linux/amd64 ubuntu:22.04 AS builder
+
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y make gcc
 
 ADD . /cproc
-WORKDIR /cproc/qbe
-RUN make
-ENV PATH=/cproc/qbe/obj:$PATH
 WORKDIR /cproc
-RUN make
+RUN ./configure && make
 
 RUN mkdir -p /deps
 RUN ldd /cproc/cproc-qbe | tr -s '[:blank:]' '\n' | grep '^/' | xargs -I % sh -c 'cp % /deps;'
 
-FROM ubuntu:20.04 as package
+FROM ubuntu:22.04 AS package
 
 COPY --from=builder /deps /deps
 COPY --from=builder /cproc/cproc-qbe /cproc/cproc-qbe
