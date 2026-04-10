@@ -1,6 +1,5 @@
 project: cproc
 target: cproc-qbe
-duration: 90
 
 cmds:
   - cmd: /cproc/cproc-qbe /test.c
