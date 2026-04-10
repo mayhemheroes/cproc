@@ -10,10 +10,19 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    name: '${{ matrix.os }} shared=${{ matrix.shared }} ${{ matrix.build_type }}'
+    runs-on: ${{ matrix.os }}
     permissions: write-all
     outputs:
       image: ${{ steps.meta.outputs.tags }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        shared: [false]
+        build_type: [Release]
+        include:
+        - os: ubuntu-latest
+          triplet: x64-linux
 
     steps:
     - uses: actions/checkout@v6
