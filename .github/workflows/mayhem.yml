@@ -48,6 +48,8 @@ jobs:
     permissions: write-all
 
     steps:
+    - uses: actions/checkout@v6
+
     - name: Start analysis
       uses: forallsecure/mcode-action@long-runs
       with:
