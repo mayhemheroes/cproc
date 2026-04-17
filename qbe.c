@@ -638,20 +638,18 @@ funchlt(struct func *f)
 struct gotolabel *
 funcgoto(struct func *f, char *name)
 {
-	void **entry;
 	struct gotolabel *g;
 	struct mapkey key;
+	size_t idx;
 
 	mapkey(&key, name, strlen(name));
-	entry = mapput(&f->gotos, &key);
-	g = *entry;
-	if (!g) {
+	if (mapput(&f->gotos, &key, &idx)) {
 		g = xmalloc(sizeof(*g));
 		g->label = mkblock(name);
-		*entry = g;
+		f->gotos.vals[idx].p = g;
 	}
 
-	return g;
+	return f->gotos.vals[idx].p;
 }
 
 static struct lvalue

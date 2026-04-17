@@ -56,7 +56,7 @@ void *arraylast(struct array *, size_t);
 struct map {
 	size_t len, cap;
 	struct mapkey *keys;
-	void **vals;
+	union mapval *vals;
 };
 
 struct mapkey {
@@ -65,11 +65,16 @@ struct mapkey {
 	size_t len;
 };
 
+union mapval {
+	void *p;
+	int i;
+};
+
 void mapkey(struct mapkey *, const void *, size_t);
 void mapinit(struct map *, size_t);
 void mapfree(struct map *, void (*)(void *));
-void **mapput(struct map *, struct mapkey *);
-void *mapget(struct map *, struct mapkey *);
+bool mapput(struct map *, struct mapkey *, size_t *);
+void *mapget(struct map *, struct mapkey *, size_t *);
 
 /* tree */
 

@@ -47,7 +47,7 @@ mapfree(struct map *h, void del(void *))
 	if (del) {
 		for (i = 0; i < h->cap; ++i) {
 			if (h->keys[i].str)
-				del(h->vals[i]);
+				del(h->vals[i].p);
 		}
 	}
 	free(h->keys);
@@ -73,11 +73,11 @@ keyindex(struct map *h, struct mapkey *k)
 	return i;
 }
 
-void **
-mapput(struct map *h, struct mapkey *k)
+bool
+mapput(struct map *h, struct mapkey *k, size_t *idx)
 {
 	struct mapkey *oldkeys;
-	void **oldvals;
+	union mapval *oldvals;
 	size_t i, j, oldcap;
 
 	if (h->cap / 2 < h->len) {
@@ -99,21 +99,23 @@ mapput(struct map *h, struct mapkey *k)
 		free(oldkeys);
 		free(oldvals);
 	}
-	i = keyindex(h, k);
+	*idx = i = keyindex(h, k);
 	if (!h->keys[i].str) {
 		h->keys[i] = *k;
-		h->vals[i] = NULL;
 		++h->len;
+		return true;
 	}
 
-	return &h->vals[i];
+	return false;
 }
 
 void *
-mapget(struct map *h, struct mapkey *k)
+mapget(struct map *h, struct mapkey *k, size_t *idx)
 {
 	size_t i;
 
 	i = keyindex(h, k);
-	return h->keys[i].str ? h->vals[i] : NULL;
+	if (idx)
+		*idx = i;
+	return h->keys[i].str ? h->vals[i].p : NULL;
 }

@@ -1164,20 +1164,20 @@ stringdecl(struct expr *expr)
 {
 	static struct map strings;
 	struct mapkey key;
-	void **entry;
 	struct decl *d;
+	size_t i;
 
 	if (!strings.len)
 		mapinit(&strings, 64);
 	assert(expr->kind == EXPRSTRING);
 	mapkey(&key, expr->u.string.data, expr->u.string.size);
-	entry = mapput(&strings, &key);
-	d = *entry;
-	if (!d) {
+	if (mapput(&strings, &key, &i)) {
 		d = mkdecl("string", DECLOBJECT, expr->type, QUALNONE, LINKNONE);
 		d->value = mkglobal(d);
 		emitdata(d, mkinit(0, expr->type->size, (struct bitfield){0}, expr));
-		*entry = d;
+		strings.vals[i].p = d;
+	} else {
+		d = strings.vals[i].p;
 	}
 	return d;
 }

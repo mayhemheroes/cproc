@@ -73,7 +73,7 @@ scopegetdecl(struct scope *s, const char *name, bool recurse)
 
 	mapkey(&k, name, strlen(name));
 	do {
-		d = s->decls.len ? mapget(&s->decls, &k) : NULL;
+		d = s->decls.len ? mapget(&s->decls, &k, NULL) : NULL;
 		s = s->parent;
 	} while (!d && s && recurse);
 
@@ -88,7 +88,7 @@ scopegettag(struct scope *s, const char *name, bool recurse)
 
 	mapkey(&k, name, strlen(name));
 	do {
-		t = s->tags.len ? mapget(&s->tags, &k) : NULL;
+		t = s->tags.len ? mapget(&s->tags, &k, NULL) : NULL;
 		s = s->parent;
 	} while (!t && s && recurse);
 
@@ -99,20 +99,24 @@ void
 scopeputdecl(struct scope *s, struct decl *d)
 {
 	struct mapkey k;
+	size_t i;
 
 	if (!s->decls.len)
 		mapinit(&s->decls, 32);
 	mapkey(&k, d->name, strlen(d->name));
-	*mapput(&s->decls, &k) = d;
+	mapput(&s->decls, &k, &i);
+	s->decls.vals[i].p = d;
 }
 
 void
 scopeputtag(struct scope *s, const char *name, struct type *t)
 {
 	struct mapkey k;
+	size_t i;
 
 	if (!s->tags.len)
 		mapinit(&s->tags, 32);
 	mapkey(&k, name, strlen(name));
-	*mapput(&s->tags, &k) = t;
+	mapput(&s->tags, &k, &i);
+	s->tags.vals[i].p = t;
 }

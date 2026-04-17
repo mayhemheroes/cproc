@@ -106,12 +106,12 @@ macroparam(struct macro *m, struct token *t)
 
 /* lookup a macro by name */
 static struct macro *
-macroget(char *name)
+macroget(const char *name)
 {
 	struct mapkey k;
 
 	mapkey(&k, name, strlen(name));
-	return mapget(&macros, &k);
+	return mapget(&macros, &k, NULL);
 }
 
 static void
@@ -208,7 +208,6 @@ define(void)
 	struct macroparam *p;
 	struct array params = {0}, repl = {0};
 	struct mapkey k;
-	void **entry;
 	size_t i;
 
 	m = xmalloc(sizeof(*m));
@@ -271,10 +270,14 @@ define(void)
 	tok = *t;
 
 	mapkey(&k, m->name, strlen(m->name));
-	entry = mapput(&macros, &k);
-	if (*entry && !macroequal(m, *entry))
-		error(&tok.loc, "redefinition of macro '%s'", m->name);
-	*entry = m;
+	if (!mapput(&macros, &k, &i)) {
+		struct macro *other;
+
+		other = macros.vals[i].p;
+		if (other && !macroequal(m, macros.vals[i].p))
+			error(&tok.loc, "redefinition of macro '%s'", m->name);
+	}
+	macros.vals[i].p = m;
 }
 
 static void
@@ -282,18 +285,17 @@ undef(void)
 {
 	char *name;
 	struct mapkey k;
-	void **entry;
 	struct macro *m;
+	size_t i;
 
 	name = tokencheck(&tok, TIDENT, "after #undef");
 	mapkey(&k, name, strlen(name));
-	entry = mapput(&macros, &k);
-	m = *entry;
+	m = mapget(&macros, &k, &i);
 	if (m) {
 		free(name);
 		free(m->param);
 		free(m->token);
-		*entry = NULL;
+		macros.vals[i].p = NULL;
 	}
 	scan(&tok);
 }
