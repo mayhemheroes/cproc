@@ -77,7 +77,7 @@ subobj(struct initparser *p, struct type *t, unsigned long long off)
 }
 
 static bool
-findmember(struct initparser *p, char *name)
+findmember(struct initparser *p, const char *name)
 {
 	struct member *m;
 
@@ -129,7 +129,6 @@ designator(struct scope *s, struct initparser *p)
 			name = expect(TIDENT, "for member designator");
 			if (!findmember(p, name))
 				error(&tok.loc, "%s has no member named '%s'", t->kind == TYPEUNION ? "union" : "struct", name);
-			free(name);
 			break;
 		default:
 			expect(TASSIGN, "after designator");

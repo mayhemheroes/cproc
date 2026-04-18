@@ -95,9 +95,9 @@ macroparam(struct macro *m, struct token *t)
 {
 	size_t i;
 
-	if (t->kind == TIDENT) {
+	if (t->kind >= TPPIDENT) {
 		for (i = 0; i < m->nparam; ++i) {
-			if (strcmp(m->param[i].name, t->lit) == 0)
+			if (strcmp(m->param[i].name, tokenstr(t->kind)) == 0)
 				return i;
 		}
 	}
@@ -184,14 +184,16 @@ again:
 			assert(i != -1);
 			f = ctxpush(&m->arg[i].str, 1, NULL, space);
 			break;
-		case TIDENT:
-			i = macroparam(m, f->token);
-			if (i == -1)
-				break;
-			framenext(f);
-			if (m->arg[i].ntoken == 0)
-				goto again;
-			f = ctxpush(m->arg[i].token, m->arg[i].ntoken, NULL, space);
+		default:
+			if (f->token->kind >= TPPIDENT) {
+				i = macroparam(m, f->token);
+				if (i == -1)
+					break;
+				framenext(f);
+				if (m->arg[i].ntoken == 0)
+					goto again;
+				f = ctxpush(m->arg[i].token, m->arg[i].ntoken, NULL, space);
+			}
 			break;
 		}
 		/* XXX: token concatenation */
@@ -211,7 +213,7 @@ define(void)
 	size_t i;
 
 	m = xmalloc(sizeof(*m));
-	m->name = tokencheck(&tok, TIDENT, "after #define");
+	m->name = tokencheck(&tok, TPPIDENT, "after #define");
 	m->hide = false;
 	t = arrayadd(&repl, sizeof(*t));
 	scan(t);
@@ -232,7 +234,7 @@ define(void)
 				p->name = "__VA_ARGS__";
 				p->flags |= PARAMVAR;
 			} else {
-				p->name = tokencheck(&tok, TIDENT, "of macro parameter name or '...'");
+				p->name = tokencheck(&tok, TPPIDENT, "of macro parameter name or '...'");
 			}
 		}
 		scan(t);  /* first token in replacement list */
@@ -250,7 +252,7 @@ define(void)
 		prev = t->kind;
 		t = arrayadd(&repl, sizeof(*t));
 		scan(t);
-		if (t->kind == TIDENT && strcmp(t->lit, "__VA_ARGS__") == 0 && !macrovarargs(m))
+		if (t->kind == T__VA_ARGS__ && !macrovarargs(m))
 			error(&t->loc, "__VA_ARGS__ can only be used in variadic function-like macros");
 		if (m->kind != MACROFUNC)
 			continue;
@@ -258,7 +260,7 @@ define(void)
 			m->param[i].flags |= PARAMTOK;
 		i = macroparam(m, t);
 		if (prev == THASH) {
-			tokencheck(t, TIDENT, "after '#' operator");
+			tokencheck(t, TPPIDENT, "after '#' operator");
 			if (i == -1)
 				error(&t->loc, "'%s' is not a macro parameter name", t->lit);
 			m->param[i].flags |= PARAMSTR;
@@ -288,11 +290,10 @@ undef(void)
 	struct macro *m;
 	size_t i;
 
-	name = tokencheck(&tok, TIDENT, "after #undef");
+	name = tokencheck(&tok, TPPIDENT, "after #undef");
 	mapkey(&k, name, strlen(name));
 	m = mapget(&macros, &k, &i);
 	if (m) {
-		free(name);
 		free(m->param);
 		free(m->token);
 		macros.vals[i].p = NULL;
@@ -314,7 +315,7 @@ directive(void)
 	ppflags |= PPNEWLINE;
 	if (tok.kind == TNUMBER)
 		goto line;  /* gcc line markers */
-	name = tokencheck(&tok, TIDENT, "newline, or number after '#'");
+	name = tokencheck(&tok, TPPIDENT, ", newline, or number after '#'");
 	if (strcmp(name, "if") == 0) {
 		error(&tok.loc, "#if directive is not implemented");
 	} else if (strcmp(name, "ifdef") == 0) {
@@ -364,7 +365,6 @@ line:
 	} else {
 		error(&tok.loc, "invalid preprocessor directive #%s", name);
 	}
-	free(name);
 	tokencheck(&tok, TNEWLINE, "after preprocessing directive");
 	ppflags = oldflags;
 }
@@ -432,7 +432,7 @@ stringize(struct array *buf, struct token *t)
 
 	if ((t->space || t->kind == TNEWLINE) && buf->len > 1 && ((char *)buf->val)[buf->len - 1] != ' ')
 		arrayaddbuf(buf, " ", 1);
-	lit = t->lit ? t->lit : tokstr[t->kind];
+	lit = t->lit ? t->lit : tokenstr(t->kind);
 	if (t->kind == TSTRINGLIT || t->kind == TCHARCONST) {
 		for (; *lit; ++lit) {
 			if (*lit == '\\' || *lit == '"')
@@ -452,9 +452,9 @@ expand(struct token *t)
 	struct macro *m;
 	bool space;
 
-	if (t->kind != TIDENT)
+	if (t->kind < TPPIDENT)
 		return false;
-	m = macroget(t->lit);
+	m = macroget(tokenstr(t->kind));
 	if (!m || m->hide)
 		t->hide = true;
 	if (t->hide)
@@ -536,104 +536,6 @@ expandfunc(struct macro *m)
 	m->arg = arg;
 }
 
-static void
-keyword(struct token *tok)
-{
-	static const struct {
-		const char *name;
-		int value;
-	} keywords[] = {
-		{"_Alignas",       TALIGNAS},
-		{"_Alignof",       TALIGNOF},
-		{"_Atomic",        T_ATOMIC},
-		{"_BitInt",        T_BITINT},
-		{"_Bool",          TBOOL},
-		{"_Complex",       T_COMPLEX},
-		{"_Decimal128",    T_DECIMAL128},
-		{"_Decimal32",     T_DECIMAL32},
-		{"_Decimal64",     T_DECIMAL64},
-		{"_Generic",       T_GENERIC},
-		{"_Imaginary",     T_IMAGINARY},
-		{"_Noreturn",      T_NORETURN},
-		{"_Static_assert", TSTATIC_ASSERT},
-		{"_Thread_local",  TTHREAD_LOCAL},
-		{"__alignof__",    TALIGNOF},
-		{"__asm",          T__ASM__},
-		{"__asm__",        T__ASM__},
-		{"__attribute__",  T__ATTRIBUTE__},
-		{"__inline",       TINLINE},
-		{"__inline__",     TINLINE},
-		{"__signed",       TSIGNED},
-		{"__signed__",     TSIGNED},
-		{"__thread",       TTHREAD_LOCAL},
-		{"__typeof",       TTYPEOF},
-		{"__typeof__",     TTYPEOF},
-		{"__volatile__",   TVOLATILE},
-		{"alignas",        TALIGNAS},
-		{"alignof",        TALIGNOF},
-		{"auto",           TAUTO},
-		{"bool",           TBOOL},
-		{"break",          TBREAK},
-		{"case",           TCASE},
-		{"char",           TCHAR},
-		{"const",          TCONST},
-		{"constexpr",      TCONSTEXPR},
-		{"continue",       TCONTINUE},
-		{"default",        TDEFAULT},
-		{"do",             TDO},
-		{"double",         TDOUBLE},
-		{"else",           TELSE},
-		{"enum",           TENUM},
-		{"extern",         TEXTERN},
-		{"false",          TFALSE},
-		{"float",          TFLOAT},
-		{"for",            TFOR},
-		{"goto",           TGOTO},
-		{"if",             TIF},
-		{"inline",         TINLINE},
-		{"int",            TINT},
-		{"long",           TLONG},
-		{"nullptr",        TNULLPTR},
-		{"register",       TREGISTER},
-		{"restrict",       TRESTRICT},
-		{"return",         TRETURN},
-		{"short",          TSHORT},
-		{"signed",         TSIGNED},
-		{"sizeof",         TSIZEOF},
-		{"static",         TSTATIC},
-		{"static_assert",  TSTATIC_ASSERT},
-		{"struct",         TSTRUCT},
-		{"switch",         TSWITCH},
-		{"thread_local",   TTHREAD_LOCAL},
-		{"true",           TTRUE},
-		{"typedef",        TTYPEDEF},
-		{"typeof",         TTYPEOF},
-		{"typeof_unqual",  TTYPEOF_UNQUAL},
-		{"union",          TUNION},
-		{"unsigned",       TUNSIGNED},
-		{"void",           TVOID},
-		{"volatile",       TVOLATILE},
-		{"while",          TWHILE},
-	};
-	size_t low = 0, high = countof(keywords), mid;
-	int cmp;
-
-	while (low < high) {
-		mid = (low + high) / 2;
-		cmp = strcmp(tok->lit, keywords[mid].name);
-		if (cmp == 0) {
-			free(tok->lit);
-			tok->kind = keywords[mid].value;
-			tok->lit = NULL;
-			break;
-		}
-		if (cmp < 0)
-			high = mid;
-		else
-			low = mid + 1;
-	}
-}
-
 void
 next(void)
 {
@@ -642,8 +544,25 @@ next(void)
 	do t = rawnext();
 	while (expand(t) || t->kind == TNEWLINE && !(ppflags & PPNEWLINE));
 	tok = *t;
-	if (tok.kind == TIDENT)
-		keyword(&tok);
+
+	/* keyword aliases */
+	switch (tok.kind) {
+	case ALIAS_ALIGNAS:       tok.kind = TALIGNAS;       break;
+	case ALIAS__ALIGNOF__:
+	case ALIAS_ALIGNOF:       tok.kind = TALIGNOF;       break;
+	case ALIAS_BOOL:          tok.kind = TBOOL;          break;
+	case ALIAS__INLINE:
+	case ALIAS__INLINE__:     tok.kind = TINLINE;        break;
+	case ALIAS__SIGNED:
+	case ALIAS__SIGNED__:     tok.kind = TSIGNED;        break;
+	case ALIAS_STATIC_ASSERT: tok.kind = TSTATIC_ASSERT; break;
+	case ALIAS_THREAD_LOCAL:
+	case ALIAS__THREAD:       tok.kind = TTHREAD_LOCAL;  break;
+	case ALIAS__TYPEOF:
+	case ALIAS__TYPEOF__:     tok.kind = TTYPEOF;        break;
+	case ALIAS__VOLATILE__:   tok.kind = TVOLATILE;      break;
+	case ALIAS__ASM:          tok.kind = T__ASM__;       break;
+	}
 }
 
 bool

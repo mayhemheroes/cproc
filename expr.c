@@ -218,7 +218,7 @@ exprassign(struct expr *e, struct type *t)
 	case TYPESTRUCT:
 	case TYPEUNION:
 		if (!typecompatible(t, et))
-			error(&tok.loc, "assignment to %s type must be from compatible type", tokstr[t->kind]);
+			error(&tok.loc, "assignment to %s type must be from compatible type", tokenstr(t->kind));
 		break;
 	default:
 		assert(t->prop & PROPARITH);
@@ -277,9 +277,9 @@ mkbinaryexpr(struct location *loc, enum tokenkind op, struct expr *l, struct exp
 	case TLOR:
 	case TLAND:
 		if (!(lp & PROPSCALAR))
-			error(loc, "left operand of '%s' operator must be scalar", tokstr[op]);
+			error(loc, "left operand of '%s' operator must be scalar", tokenstr(op));
 		if (!(rp & PROPSCALAR))
-			error(loc, "right operand of '%s' operator must be scalar", tokstr[op]);
+			error(loc, "right operand of '%s' operator must be scalar", tokenstr(op));
 		t = &typeint;
 		break;
 	case TEQL:
@@ -292,7 +292,7 @@ mkbinaryexpr(struct location *loc, enum tokenkind op, struct expr *l, struct exp
 		if (l->type->kind != TYPEPOINTER)
 			e = l, l = r, r = e;
 		if (l->type->kind != TYPEPOINTER)
-			error(loc, "invalid operands to '%s' operator", tokstr[op]);
+			error(loc, "invalid operands to '%s' operator", tokenstr(op));
 		if (nullpointer(eval(r))) {
 			r = exprconvert(r, l->type);
 			break;
@@ -302,13 +302,13 @@ mkbinaryexpr(struct location *loc, enum tokenkind op, struct expr *l, struct exp
 			break;
 		}
 		if (r->type->kind != TYPEPOINTER)
-			error(loc, "invalid operands to '%s' operator", tokstr[op]);
+			error(loc, "invalid operands to '%s' operator", tokenstr(op));
 		if (l->type->base->kind == TYPEVOID)
 			e = l, l = r, r = e;
 		if (r->type->base->kind == TYPEVOID && l->type->base->kind != TYPEFUNC)
 			r = exprconvert(r, l->type);
 		else if (!typecompatible(l->type->base, r->type->base))
-			error(loc, "pointer operands to '%s' operator are to incompatible types", tokstr[op]);
+			error(loc, "pointer operands to '%s' operator are to incompatible types", tokenstr(op));
 		break;
 	case TLESS:
 	case TGREATER:
@@ -319,9 +319,9 @@ mkbinaryexpr(struct location *loc, enum tokenkind op, struct expr *l, struct exp
 			commonreal(&l, &r);
 		} else if (l->type->kind == TYPEPOINTER && r->type->kind == TYPEPOINTER) {
 			if (!typecompatible(l->type->base, r->type->base) || l->type->base->kind == TYPEFUNC)
-				error(loc, "pointer operands to '%s' operator must be to compatible object types", tokstr[op]);
+				error(loc, "pointer operands to '%s' operator must be to compatible object types", tokenstr(op));
 		} else {
-			error(loc, "invalid operands to '%s' operator", tokstr[op]);
+			error(loc, "invalid operands to '%s' operator", tokenstr(op));
 		}
 		break;
 	case TBOR:
@@ -373,13 +373,13 @@ mkbinaryexpr(struct location *loc, enum tokenkind op, struct expr *l, struct exp
 	case TMUL:
 	case TDIV:
 		if (!(lp & PROPARITH) || !(rp & PROPARITH))
-			error(loc, "operands to '%s' operator must be arithmetic", tokstr[op]);
+			error(loc, "operands to '%s' operator must be arithmetic", tokenstr(op));
 		t = commonreal(&l, &r);
 		break;
 	case TSHL:
 	case TSHR:
 		if (!(lp & PROPINT) || !(rp & PROPINT))
-			error(loc, "operands to '%s' operator must be integer", tokstr[op]);
+			error(loc, "operands to '%s' operator must be integer", tokenstr(op));
 		l = exprpromote(l);
 		r = exprpromote(r);
 		t = l->type;
@@ -711,18 +711,6 @@ primaryexpr(struct scope *s)
 	int base;
 
 	switch (tok.kind) {
-	case TIDENT:
-		d = scopegetdecl(s, tok.lit, 1);
-		if (!d)
-			error(&tok.loc, "undeclared identifier: %s", tok.lit);
-		e = mkexpr(EXPRIDENT, d->type, NULL);
-		e->qual = d->qual;
-		e->lvalue = d->kind == DECLOBJECT;
-		e->u.ident.decl = d;
-		if (d->kind != DECLBUILTIN)
-			e = decay(e);
-		next();
-		break;
 	case TSTRINGLIT:
 		e = mkexpr(EXPRSTRING, NULL, NULL);
 		t = stringconcat(&e->u.string, false);
@@ -811,6 +799,19 @@ primaryexpr(struct scope *s)
 		e = generic(s);
 		break;
 	default:
+		if (tok.kind >= TIDENT) {
+			d = scopegetdecl(s, tokenstr(tok.kind), 1);
+			if (!d)
+				error(&tok.loc, "undeclared identifier: %s", tokenstr(tok.kind));
+			e = mkexpr(EXPRIDENT, d->type, NULL);
+			e->qual = d->qual;
+			e->lvalue = d->kind == DECLOBJECT;
+			e->u.ident.decl = d;
+			if (d->kind != DECLBUILTIN)
+				e = decay(e);
+			next();
+			break;
+		}
 		error(&tok.loc, "expected primary expression");
 	}
 
@@ -844,7 +845,6 @@ designator(struct scope *s, struct type *t, unsigned long long *offset)
 			m = typemember(t, name, offset);
 			if (!m)
 				error(&tok.loc, "%s has no member named '%s'", t->kind == TYPEUNION ? "union" : "struct", name);
-			free(name);
 			t = m->type;
 			break;
 		default:
@@ -903,7 +903,6 @@ builtinfunc(struct scope *s, enum builtinkind kind)
 			error(&tok.loc, "struct/union has no member named '%s'", name);
 		designator(s, m->type, &offset);
 		e = mkconstexpr(&typeulong, offset);
-		free(name);
 		break;
 	case BUILTINTYPESCOMPATIBLEP:
 		t = typename(s, NULL, NULL);
@@ -967,9 +966,9 @@ mkincdecexpr(enum tokenkind op, struct expr *base, bool post)
 	struct expr *e;
 
 	if (!base->lvalue)
-		error(&tok.loc, "operand of '%s' operator must be an lvalue", tokstr[op]);
+		error(&tok.loc, "operand of '%s' operator must be an lvalue", tokenstr(op));
 	if (base->qual & QUALCONST)
-		error(&tok.loc, "operand of '%s' operator is const qualified", tokstr[op]);
+		error(&tok.loc, "operand of '%s' operator is const qualified", tokenstr(op));
 	e = mkexpr(EXPRINCDEC, base->type, base);
 	e->op = op;
 	e->u.incdec.post = post;
@@ -1051,17 +1050,17 @@ postfixexpr(struct scope *s, struct expr *r)
 		case TARROW:
 			op = tok.kind;
 			if (r->type->kind != TYPEPOINTER)
-				error(&tok.loc, "'%s' operator must be applied to pointer to struct/union", tokstr[op]);
+				error(&tok.loc, "'%s' operator must be applied to pointer to struct/union", tokenstr(op));
 			t = r->type->base;
 			tq = r->type->qual;
 			if (t->kind != TYPESTRUCT && t->kind != TYPEUNION)
-				error(&tok.loc, "'%s' operator must be applied to pointer to struct/union", tokstr[op]);
+				error(&tok.loc, "'%s' operator must be applied to pointer to struct/union", tokenstr(op));
 			next();
-			if (tok.kind != TIDENT)
-				error(&tok.loc, "expected identifier after '%s' operator", tokstr[op]);
+			if (tok.kind < TIDENT)
+				error(&tok.loc, "expected identifier after '%s' operator", tokenstr(op));
 			lvalue = op == TARROW || r->base->lvalue;
 			offset = 0;
-			m = typemember(t, tok.lit, &offset);
+			m = typemember(t, tokenstr(tok.kind), &offset);
 			if (!m)
 				error(&tok.loc, "struct/union has no member named '%s'", tok.lit);
 			r = mkbinaryexpr(&tok.loc, TADD, exprconvert(r, &typeulong), mkconstexpr(&typeulong, offset));
@@ -1170,13 +1169,13 @@ unaryexpr(struct scope *s)
 			if (e->decayed)
 				e = e->base;
 			if (e->kind == EXPRBITFIELD)
-				error(&tok.loc, "%s operator applied to bitfield expression", tokstr[op]);
+				error(&tok.loc, "%s operator applied to bitfield expression", tokenstr(op));
 			t = e->type;
 		}
 		if (t->incomplete)
-			error(&tok.loc, "%s operator applied to incomplete type", tokstr[op]);
+			error(&tok.loc, "%s operator applied to incomplete type", tokenstr(op));
 		if (t->kind == TYPEFUNC)
-			error(&tok.loc, "%s operator applied to function type", tokstr[op]);
+			error(&tok.loc, "%s operator applied to function type", tokenstr(op));
 		if (t->kind == TYPEARRAY && t->size == 0 && op == TSIZEOF) {
 			e = mkexpr(EXPRSIZEOF, &typeulong, e);
 			e->u.szof.type = t;

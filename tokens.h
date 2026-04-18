@@ -1,13 +1,12 @@
-TOKEN(TNONE,          NULL)
+TOKEN(TNONE,          )
 
-TOKEN(TEOF,           NULL)
-TOKEN(TNEWLINE,       NULL)
-TOKEN(TOTHER,         NULL)
+TOKEN(TEOF,           )
+TOKEN(TNEWLINE,       )
+TOKEN(TOTHER,         )
 
-TOKEN(TIDENT,         NULL)
-TOKEN(TNUMBER,        NULL)
-TOKEN(TCHARCONST,     NULL)
-TOKEN(TSTRINGLIT,     NULL)
+TOKEN(TNUMBER,        )
+TOKEN(TCHARCONST,     )
+TOKEN(TSTRINGLIT,     )
 
 /* punctuators */
 TOKEN(TLBRACK,        "[")
@@ -117,3 +116,25 @@ TOKEN(T_IMAGINARY,    "_Imaginary")
 TOKEN(T_NORETURN,     "_Noreturn")
 TOKEN(T__ASM__,       "__asm__")
 TOKEN(T__ATTRIBUTE__, "__attribute__")
+
+/* other identifiers */
+TOKEN(T__VA_ARGS__,   "__VA_ARGS__")
+
+/* keyword aliases */
+TOKEN(ALIAS_ALIGNAS,       "_Alignas")
+TOKEN(ALIAS_ALIGNOF,       "_Alignof")
+TOKEN(ALIAS_BOOL,          "_Bool")
+TOKEN(ALIAS_STATIC_ASSERT, "_Static_assert")
+TOKEN(ALIAS_THREAD_LOCAL,  "_Thread_local")
+
+/* compatibility keyword aliases */
+TOKEN(ALIAS__ALIGNOF__,    "__alignof__")
+TOKEN(ALIAS__INLINE,       "__inline")      /* XXX: what needs this? */
+TOKEN(ALIAS__INLINE__,     "__inline__")    /* XXX: what needs this? */
+TOKEN(ALIAS__SIGNED,       "__signed")      /* XXX: what needs this? */
+TOKEN(ALIAS__SIGNED__,     "__signed__")    /* XXX: what needs this? */
+TOKEN(ALIAS__THREAD,       "__thread")
+TOKEN(ALIAS__TYPEOF,       "__typeof")
+TOKEN(ALIAS__TYPEOF__,     "__typeof__")
+TOKEN(ALIAS__VOLATILE__,   "__volatile__")  /* XXX: what needs this? */
+TOKEN(ALIAS__ASM,          "__asm")

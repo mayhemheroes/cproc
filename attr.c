@@ -9,15 +9,18 @@ enum attrprefix {
 	PREFIXGNU,
 };
 
-static char *
-strip(char *name)
+static const char *
+strip(const char *name, char *buf, size_t buflen)
 {
 	size_t len;
 
 	len = strlen(name);
 	if (len >= 4 && name[0] == '_' && name[1] == '_' && name[len - 2] == '_' && name[len - 1] == '_') {
-		name[len - 2] = '\0';
-		name += 2;
+		if (len - 4 >= buflen)
+			return "";
+		memcpy(buf, name + 2, len - 4);
+		buf[len - 4] = '\0';
+		return buf;
 	}
 	return name;
 }
@@ -25,21 +28,20 @@ strip(char *name)
 static bool
 parseattr(struct attr *a, enum attrkind allowed, enum attrprefix prefix)
 {
-	char *name, *prefixname = "";
+	const char *name, *prefixname = "";
+	char namebuf[32];
 	enum attrkind kind;
 	int paren;
 
-	if (tok.kind != TIDENT)
+	if (tok.kind < TIDENT)
 		return false;
-	name = strip(tok.lit);
+	name = strip(tokenstr(tok.kind), namebuf, sizeof namebuf);
 	next();
 	if (!prefix) {
 		if (consume(TCOLONCOLON)) {
 			if (strcmp(name, "gnu") == 0)
 				prefix = PREFIXGNU;
-			else
-				prefix = 0;
-			name = strip(expect(TIDENT, "after attribute prefix"));
+			name = strip(expect(TIDENT, "after attribute prefix"), namebuf, sizeof namebuf);
 		} else {
 			prefix = PREFIXNONE;
 		}

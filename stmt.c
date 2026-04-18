@@ -37,16 +37,16 @@ label(struct func *f, struct scope *s)
 		s->switchcases->defaultlabel = mkblock("switch_default");
 		funclabel(f, s->switchcases->defaultlabel);
 		break;
-	case TIDENT:
-		name = tok.lit;
+	default:
+		if (tok.kind < TIDENT)
+			return false;
+		name = tokenstr(tok.kind);
 		if (!peek(TCOLON))
 			return false;
 		g = funcgoto(f, name);
 		g->defined = true;
 		funclabel(f, g->label);
 		break;
-	default:
-		return false;
 	}
 	return true;
 }

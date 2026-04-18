@@ -6,6 +6,9 @@ enum tokenkind {
 #define TOKEN(t, s) t,
 #include "tokens.h"
 #undef TOKEN
+
+	TPPIDENT = TALIGNAS,
+	TIDENT = T__VA_ARGS__
 };
 
 struct location {
@@ -286,9 +289,11 @@ struct init {
 /* token */
 
 extern struct token tok;
-extern const char *tokstr[];
 
+void tokeninit(void);
+int tokenget(const void *, size_t);
 void tokenprint(const struct token *);
+char *tokenstr(enum tokenkind);
 char *tokencheck(const struct token *, enum tokenkind, const char *);
 noreturn void error(const struct location *, const char *, ...);
 

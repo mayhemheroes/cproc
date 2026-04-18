@@ -180,11 +180,11 @@ tagspec(struct scope *s)
 	a.kind = 0;
 	attr(&a, allowedattr);
 	gnuattr(&a, allowedattr);
-	tag = NULL;
+	tag = 0;
 	t = NULL;
 	et = NULL;
-	if (tok.kind == TIDENT) {
-		tag = tok.lit;
+	if (tok.kind >= TIDENT) {
+		tag = tokenstr(tok.kind);
 		next();
 	}
 	if (kind == TYPEENUM && consume(TCOLON)) {
@@ -246,8 +246,8 @@ tagspec(struct scope *s)
 		}
 		max = 0;
 		min = 0;
-		for (value = 0; tok.kind == TIDENT; ++value) {
-			name = tok.lit;
+		for (value = 0; tok.kind >= TIDENT; ++value) {
+			name = tokenstr(tok.kind);
 			next();
 			attr(NULL, 0);
 			if (consume(TASSIGN)) {
@@ -421,17 +421,6 @@ declspecs(struct scope *s, enum storageclass *sc, enum funcspec *fs, int *align)
 			t = tagspec(s);
 			++ntypes;
 			break;
-		case TIDENT:
-			if (t || ts)
-				goto done;
-			d = scopegetdecl(s, tok.lit, 1);
-			if (!d || d->kind != DECLTYPE)
-				goto done;
-			t = d->type;
-			tq |= d->qual;
-			++ntypes;
-			next();
-			break;
 		case TTYPEOF:
 		case TTYPEOF_UNQUAL:
 			next();
@@ -471,7 +460,16 @@ declspecs(struct scope *s, enum storageclass *sc, enum funcspec *fs, int *align)
 			break;
 
 		default:
-			goto done;
+			if (op < TIDENT || t || ts)
+				goto done;
+			d = scopegetdecl(s, tokenstr(tok.kind), 1);
+			if (!d || d->kind != DECLTYPE)
+				goto done;
+			t = d->type;
+			tq |= d->qual;
+			++ntypes;
+			next();
+			break;
 		}
 		if (ntypes > 1 || (t && ts))
 			error(&tok.loc, "multiple types in declaration specifiers");
@@ -583,11 +581,10 @@ declaratortypes(struct scope *s, struct list *result, char **name, struct scope 
 			case TMUL:
 			case TLPAREN:
 				break;
-			case TIDENT:
-				if (!istypename(s, tok.lit))
-					break;
 				/* fallthrough */
 			default:
+				if (tok.kind >= TIDENT && !istypename(s, tokenstr(tok.kind)))
+					break;
 				allowattr = true;
 				goto func;
 			}
@@ -596,16 +593,15 @@ declaratortypes(struct scope *s, struct list *result, char **name, struct scope 
 		expect(TRPAREN, "after parenthesized declarator");
 		allowattr = false;
 		break;
-	case TIDENT:
-		if (!name)
-			error(&tok.loc, "identifier not allowed in abstract declarator");
-		*name = tok.lit;
-		next();
-		allowattr = true;
-		break;
 	default:
-		if (!allowabstract)
+		if (tok.kind >= TIDENT) {
+			if (!name)
+				error(&tok.loc, "identifier not allowed in abstract declarator");
+			*name = tokenstr(tok.kind);
+			next();
+		} else if (!allowabstract) {
 			error(&tok.loc, "expected '(' or identifier");
+		}
 		allowattr = true;
 	}
 	for (;;) {

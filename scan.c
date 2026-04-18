@@ -122,11 +122,15 @@ op4(struct scanner *s, int t1, int t2, int t3, int t4)
 static int
 ident(struct scanner *s)
 {
+	int tok;
+
 	s->usebuf = true;
 	while (isalnum(s->chr) || s->chr == '_')
 		nextchar(s);
-
-	return TIDENT;
+	tok = tokenget(s->buf.str, s->buf.len);
+	s->usebuf = false;
+	s->buf.len = 0;
+	return tok;
 }
 
 static int

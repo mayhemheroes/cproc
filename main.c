@@ -46,6 +46,7 @@ main(int argc, char *argv[])
 		scanfrom("<stdin>", stdin);
 	}
 
+	tokeninit();
 	ppinit();
 	if (pponly) {
 		ppflags |= PPNEWLINE;
