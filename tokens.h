@@ -118,6 +118,17 @@ TOKEN(T__ASM__,       "__asm__")
 TOKEN(T__ATTRIBUTE__, "__attribute__")
 
 /* other identifiers */
+TOKEN(TDEFINE,        "define")
+TOKEN(TELIF,          "elif")
+TOKEN(TENDIF,         "endif")
+TOKEN(TERROR,         "error")
+TOKEN(TIFDEF,         "ifdef")
+TOKEN(TIFNDEF,        "ifndef")
+TOKEN(TINCLUDE,       "include")
+TOKEN(TLINE,          "line")
+TOKEN(TPRAGMA,        "pragma")
+TOKEN(TUNDEF,         "undef")
+TOKEN(TWARNING,       "warning")
 TOKEN(T__VA_ARGS__,   "__VA_ARGS__")
 
 /* keyword aliases */

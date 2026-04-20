@@ -8,7 +8,7 @@ enum tokenkind {
 #undef TOKEN
 
 	TPPIDENT = TALIGNAS,
-	TIDENT = T__VA_ARGS__
+	TIDENT = TDEFINE
 };
 
 struct location {

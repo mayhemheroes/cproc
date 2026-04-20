@@ -306,38 +306,45 @@ directive(void)
 {
 	struct location newloc;
 	enum ppflags oldflags;
-	char *name = NULL;
 
 	scan(&tok);
 	if (tok.kind == TNEWLINE)
 		return;  /* empty directive */
 	oldflags = ppflags;
 	ppflags |= PPNEWLINE;
-	if (tok.kind == TNUMBER)
+	switch (tok.kind) {
+	case TNUMBER:
 		goto line;  /* gcc line markers */
-	name = tokencheck(&tok, TPPIDENT, ", newline, or number after '#'");
-	if (strcmp(name, "if") == 0) {
+	case TIF:
 		error(&tok.loc, "#if directive is not implemented");
-	} else if (strcmp(name, "ifdef") == 0) {
+		break;
+	case TIFDEF:
 		error(&tok.loc, "#ifdef directive is not implemented");
-	} else if (strcmp(name, "ifndef") == 0) {
+		break;
+	case TIFNDEF:
 		error(&tok.loc, "#ifndef directive is not implemented");
-	} else if (strcmp(name, "elif") == 0) {
+		break;
+	case TELIF:
 		error(&tok.loc, "#elif directive is not implemented");
-	} else if (strcmp(name, "endif") == 0) {
+		break;
+	case TENDIF:
 		error(&tok.loc, "#endif directive is not implemented");
-	} else if (strcmp(name, "include") == 0) {
+		break;
+	case TINCLUDE:
 		error(&tok.loc, "#include directive is not implemented");
-	} else if (strcmp(name, "define") == 0) {
+		break;
+	case TDEFINE:
 		scan(&tok);
 		define();
-	} else if (strcmp(name, "undef") == 0) {
+		break;
+	case TUNDEF:
 		scan(&tok);
 		undef();
-	} else if (strcmp(name, "line") == 0) {
+		break;
+	case TLINE:
 		scan(&tok);
 		tokencheck(&tok, TNUMBER, "after #line");
-line:
+	line:
 		newloc.line = strtoull(tok.lit, NULL, 0);
 		newloc.col = 1;
 		scan(&tok);
@@ -357,13 +364,16 @@ line:
 		while (tok.kind == TNUMBER)
 			scan(&tok);
 		scansetloc(newloc);
-	} else if (strcmp(name, "error") == 0) {
+		break;
+	case TERROR:
 		error(&tok.loc, "#error directive is not implemented");
-	} else if (strcmp(name, "pragma") == 0) {
+		break;
+	case TPRAGMA:
 		while (tok.kind != TNEWLINE && tok.kind != TEOF)
 			next();
-	} else {
-		error(&tok.loc, "invalid preprocessor directive #%s", name);
+		break;
+	default:
+		error(&tok.loc, "invalid preprocessor directive #%s", tokenstr(tok.kind));
 	}
 	tokencheck(&tok, TNEWLINE, "after preprocessing directive");
 	ppflags = oldflags;
