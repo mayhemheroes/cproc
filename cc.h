@@ -372,11 +372,13 @@ enum attrkind {
 	ATTRCONSTRUCTOR = 1<<3,
 	ATTRDESTRUCTOR  = 1<<4,
 	ATTRPACKED      = 1<<5,
+	ATTRSECTION     = 1<<6,
 };
 
 struct attr {
 	enum attrkind kind;
 	int align;
+	char *section;
 };
 
 bool attr(struct attr *, enum attrkind);

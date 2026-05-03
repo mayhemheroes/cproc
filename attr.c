@@ -29,7 +29,7 @@ static bool
 parseattr(struct attr *a, enum attrkind allowed, enum attrprefix prefix)
 {
 	const char *name, *prefixname = "";
-	char namebuf[32];
+	char namebuf[32], *section;
 	enum attrkind kind;
 	int paren;
 
@@ -75,6 +75,13 @@ parseattr(struct attr *a, enum attrkind allowed, enum attrprefix prefix)
 			kind = ATTRDESTRUCTOR;
 		} else if (strcmp(name, "packed") == 0) {
 			kind = ATTRPACKED;
+		} else if (strcmp(name, "section") == 0) {
+			kind = ATTRSECTION;
+			expect(TLPAREN, "after 'section'");
+			section = expect(TSTRINGLIT, "for section name");
+			if (a)
+				a->section = section;
+			expect(TRPAREN, "after section name");
 		}
 		break;
 	}
