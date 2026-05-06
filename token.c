@@ -76,12 +76,12 @@ tokenstr(enum tokenkind kind)
 }
 
 void
-tokenprint(const struct token *t)
+tokenprint(const struct token *t, FILE *f)
 {
 	const char *str;
 
 	if (t->space)
-		fputc(' ', stdout);
+		fputc(' ', f);
 	switch (t->kind) {
 	case TNUMBER:
 	case TCHARCONST:
@@ -98,7 +98,7 @@ tokenprint(const struct token *t)
 	}
 	if (!str)
 		fatal("cannot print token %d", t->kind);
-	fputs(str, stdout);
+	fputs(str, f);
 }
 
 static void

@@ -51,7 +51,7 @@ main(int argc, char *argv[])
 	if (pponly) {
 		ppflags |= PPNEWLINE;
 		while (tok.kind != TEOF) {
-			tokenprint(&tok);
+			tokenprint(&tok, stdout);
 			next();
 		}
 	} else {

@@ -365,7 +365,22 @@ directive(void)
 		scansetloc(newloc);
 		break;
 	case TERROR:
-		error(&tok.loc, "#error directive is not implemented");
+		fprintf(stderr, "%s:%zu:%zu: #error directive:", tok.loc.file, tok.loc.line, tok.loc.col);
+		scan(&tok);
+		while (tok.kind != TNEWLINE && tok.kind != TEOF) {
+			tokenprint(&tok, stderr);
+			scan(&tok);
+		}
+		fputc('\n', stderr);
+		exit(1);
+	case TWARNING:
+		fprintf(stderr, "%s:%zu:%zu: #warning directive:", tok.loc.file, tok.loc.line, tok.loc.col);
+		scan(&tok);
+		while (tok.kind != TNEWLINE && tok.kind != TEOF) {
+			tokenprint(&tok, stderr);
+			scan(&tok);
+		}
+		fputc('\n', stderr);
 		break;
 	case TPRAGMA:
 		while (tok.kind != TNEWLINE && tok.kind != TEOF)

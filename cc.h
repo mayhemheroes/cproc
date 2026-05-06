@@ -292,7 +292,7 @@ extern struct token tok;
 
 void tokeninit(void);
 int tokenget(const void *, size_t);
-void tokenprint(const struct token *);
+void tokenprint(const struct token *, FILE *);
 char *tokenstr(enum tokenkind);
 char *tokencheck(const struct token *, enum tokenkind, const char *);
 noreturn void error(const struct location *, const char *, ...);
