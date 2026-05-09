@@ -557,7 +557,6 @@ next(void)
 	/* keyword aliases */
 	switch (tok.kind) {
 	case ALIAS_ALIGNAS:       tok.kind = TALIGNAS;       break;
-	case ALIAS__ALIGNOF__:
 	case ALIAS_ALIGNOF:       tok.kind = TALIGNOF;       break;
 	case ALIAS_BOOL:          tok.kind = TBOOL;          break;
 	case ALIAS__INLINE:

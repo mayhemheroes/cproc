@@ -114,6 +114,7 @@ TOKEN(T_DECIMAL64,    "_Decimal64")
 TOKEN(T_GENERIC,      "_Generic")
 TOKEN(T_IMAGINARY,    "_Imaginary")
 TOKEN(T_NORETURN,     "_Noreturn")
+TOKEN(T__ALIGNOF__,   "__alignof__")
 TOKEN(T__ASM__,       "__asm__")
 TOKEN(T__ATTRIBUTE__, "__attribute__")
 
@@ -139,7 +140,6 @@ TOKEN(ALIAS_STATIC_ASSERT, "_Static_assert")
 TOKEN(ALIAS_THREAD_LOCAL,  "_Thread_local")
 
 /* compatibility keyword aliases */
-TOKEN(ALIAS__ALIGNOF__,    "__alignof__")
 TOKEN(ALIAS__INLINE,       "__inline")      /* XXX: what needs this? */
 TOKEN(ALIAS__INLINE__,     "__inline__")    /* XXX: what needs this? */
 TOKEN(ALIAS__SIGNED,       "__signed")      /* XXX: what needs this? */

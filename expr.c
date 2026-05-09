@@ -1144,6 +1144,7 @@ unaryexpr(struct scope *s)
 		break;
 	case TSIZEOF:
 	case TALIGNOF:
+	case T__ALIGNOF__:
 		next();
 		if (consume(TLPAREN)) {
 			t = typename(s, NULL, NULL);
@@ -1180,6 +1181,10 @@ unaryexpr(struct scope *s)
 			e = mkexpr(EXPRSIZEOF, &typeulong, e);
 			e->u.szof.type = t;
 		} else {
+			/*
+			XXX: __alignof__ is not the same as alignof on 32-bit archs
+			this needs to be considered if we gain support for those archs
+			*/
 			e = mkconstexpr(&typeulong, op == TSIZEOF ? t->size : t->align);
 		}
 		break;
