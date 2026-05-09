@@ -50,15 +50,22 @@ struct frame {
 enum ppflags ppflags;
 
 static struct array ctx;
-static struct map macros;
+static struct array macros;
 /* number of macros currently undergoing expansion */
 static size_t macrodepth;
 
 void
 ppinit(void)
 {
-	mapinit(&macros, 64);
 	next();
+}
+
+static void
+macrodel(struct macro *m)
+{
+	free(m->param);
+	free(m->token);
+	free(m);
 }
 
 /* check if two macro definitions are equal, as in C11 6.10.3p2 */
@@ -106,12 +113,9 @@ macroparam(struct macro *m, struct token *t)
 
 /* lookup a macro by name */
 static struct macro *
-macroget(const char *name)
+macroget(enum tokenkind ident)
 {
-	struct mapkey k;
-
-	mapkey(&k, name, strlen(name));
-	return mapget(&macros, &k, NULL);
+	return arraygetptr(&macros, ident - TPPIDENT);
 }
 
 static void
@@ -205,14 +209,14 @@ static void
 define(void)
 {
 	struct token *t;
-	enum tokenkind prev;
-	struct macro *m;
+	enum tokenkind ident, prev;
+	struct macro *m, *other;
 	struct macroparam *p;
 	struct array params = {0}, repl = {0};
-	struct mapkey k;
 	size_t i;
 
 	m = xmalloc(sizeof(*m));
+	ident = tok.kind;
 	m->name = tokencheck(&tok, TPPIDENT, "after #define");
 	m->hide = false;
 	t = arrayadd(&repl, sizeof(*t));
@@ -271,32 +275,27 @@ define(void)
 	m->ntoken = repl.len / sizeof(*t) - 1;
 	tok = *t;
 
-	mapkey(&k, m->name, strlen(m->name));
-	if (!mapput(&macros, &k, &i)) {
-		struct macro *other;
-
-		other = macros.vals[i].p;
-		if (other && !macroequal(m, macros.vals[i].p))
+	i = ident - TPPIDENT;
+	other = arraysetptr(&macros, i, m);
+	if (other) {
+		if (!macroequal(m, other))
 			error(&tok.loc, "redefinition of macro '%s'", m->name);
+		macrodel(other);
 	}
-	macros.vals[i].p = m;
 }
 
 static void
 undef(void)
 {
-	char *name;
-	struct mapkey k;
+	enum tokenkind ident;
 	struct macro *m;
-	size_t i;
 
-	name = tokencheck(&tok, TPPIDENT, "after #undef");
-	mapkey(&k, name, strlen(name));
-	m = mapget(&macros, &k, &i);
+	ident = tok.kind;
+	tokencheck(&tok, TPPIDENT, "after #undef");
+	m = macroget(ident);
 	if (m) {
-		free(m->param);
-		free(m->token);
-		macros.vals[i].p = NULL;
+		macrodel(m);
+		((void **)macros.val)[ident - TPPIDENT] = NULL;
 	}
 	scan(&tok);
 }
@@ -464,7 +463,7 @@ expand(struct token *t)
 
 	if (t->kind < TPPIDENT)
 		return false;
-	m = macroget(tokenstr(t->kind));
+	m = macroget(t->kind);
 	if (!m || m->hide)
 		t->hide = true;
 	if (t->hide)
