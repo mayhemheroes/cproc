@@ -470,4 +470,4 @@ void funcswitch(struct func *, struct value *, struct switchcases *, struct bloc
 void funcinit(struct func *, struct decl *, struct init *, bool);
 
 void emitfunc(struct func *, bool);
-void emitdata(struct decl *,  struct init *);
+void emitdata(struct decl *, struct init *);
