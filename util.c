@@ -93,11 +93,16 @@ arrayadd(struct array *a, size_t n)
 	void *v;
 
 	if (a->cap - a->len < n) {
-		do a->cap = a->cap ? a->cap * 2 : 256;
-		while (a->cap - a->len < n);
+		do {
+			if (a->cap > SIZE_MAX / 2) {
+				errno = ENOMEM;
+				fatal("realloc:");
+			}
+			a->cap = a->cap ? a->cap * 2 : 256;
+		} while (a->cap - a->len < n);
 		a->val = realloc(a->val, a->cap);
 		if (!a->val)
-			fatal("realloc");
+			fatal("realloc:");
 	}
 	v = (char *)a->val + a->len;
 	a->len += n;
