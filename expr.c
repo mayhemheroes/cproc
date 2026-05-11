@@ -1366,7 +1366,7 @@ mkassignexpr(struct expr *l, struct expr *r)
 
 	e = mkexpr(EXPRASSIGN, l->type, NULL);
 	e->u.assign.l = l;
-	e->u.assign.r = exprconvert(r, l->type);
+	e->u.assign.r = exprassign(r, l->type);
 	return e;
 }
 
