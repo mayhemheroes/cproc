@@ -218,7 +218,7 @@ exprassign(struct expr *e, struct type *t)
 	case TYPESTRUCT:
 	case TYPEUNION:
 		if (!typecompatible(t, et))
-			error(&tok.loc, "assignment to %s type must be from compatible type", tokenstr(t->kind));
+			error(&tok.loc, "assignment to %s type must be from compatible type", t->kind == TYPEUNION ? "union" : "struct");
 		break;
 	default:
 		assert(t->prop & PROPARITH);
