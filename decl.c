@@ -553,14 +553,15 @@ is used for the qualifiers of the base type). This is corrected in
 declarator().
 */
 static void
-declaratortypes(struct scope *s, struct list *result, char **name, struct scope **funcscope, bool allowabstract)
+declaratortypes(struct scope *s, struct list *result, char **name, int *align, struct scope **funcscope, bool allowabstract)
 {
 	struct list *ptr;
 	struct type *t;
 	struct decl *d, **paramend;
 	struct expr *e;
+	struct attr a;
 	enum typequal tq;
-	bool allowattr;
+	int allowedattr;
 
 	while (consume(TMUL)) {
 		attr(NULL, 0);
@@ -572,6 +573,7 @@ declaratortypes(struct scope *s, struct list *result, char **name, struct scope 
 	}
 	if (name)
 		*name = NULL;
+	a.kind = 0;
 	ptr = result->next;
 	switch (tok.kind) {
 	case TLPAREN:
@@ -581,17 +583,15 @@ declaratortypes(struct scope *s, struct list *result, char **name, struct scope 
 			case TMUL:
 			case TLPAREN:
 				break;
-				/* fallthrough */
 			default:
 				if (tok.kind >= TIDENT && !istypename(s, tokenstr(tok.kind)))
 					break;
-				allowattr = true;
 				goto func;
 			}
 		}
-		declaratortypes(s, result, name, funcscope, allowabstract);
+		declaratortypes(s, result, name, align, funcscope, allowabstract);
 		expect(TRPAREN, "after parenthesized declarator");
-		allowattr = false;
+		allowedattr = -1;
 		break;
 	default:
 		if (tok.kind >= TIDENT) {
@@ -602,7 +602,12 @@ declaratortypes(struct scope *s, struct list *result, char **name, struct scope 
 		} else if (!allowabstract) {
 			error(&tok.loc, "expected '(' or identifier");
 		}
-		allowattr = true;
+		/*
+		the aligned attribute is used in the definition of
+		max_align_t from gcc/clang (used with glibc),
+		dragonflybsd, freebsd, and openbsd
+		*/
+		allowedattr = align ? ATTRALIGNED : 0;
 	}
 	for (;;) {
 		switch (tok.kind) {
@@ -644,10 +649,10 @@ declaratortypes(struct scope *s, struct list *result, char **name, struct scope 
 				t->u.func.nparam = 0;
 			}
 			listinsert(ptr->prev, &t->link);
-			allowattr = true;
+			allowedattr = 0;
 			break;
 		case TLBRACK:  /* array declarator */
-			if (allowattr && attr(NULL, 0))
+			if (allowedattr != -1 && attr(&a, allowedattr))
 				goto attr;
 			next();
 			t = mkarraytype(NULL, QUALNONE, 0);
@@ -665,14 +670,18 @@ declaratortypes(struct scope *s, struct list *result, char **name, struct scope 
 				expect(TRBRACK, "after array length");
 			}
 			listinsert(ptr->prev, &t->link);
-			allowattr = true;
+			allowedattr = 0;
 			break;
 		case T__ATTRIBUTE__:
-			if (!allowattr)
+			if (allowedattr == -1)
 				error(&tok.loc, "attribute not allowed after parenthesized declarator");
-			/* attribute applies to identifier if ptr->prev == result, otherwise type ptr->prev */
-			gnuattr(NULL, 0);
+			gnuattr(&a, allowedattr);
 		attr:
+			/* attribute applies to identifier if ptr->prev == result, otherwise type ptr->prev */
+			if (ptr->prev == result) {
+				if (a.kind & ATTRALIGNED && a.align > *align)
+					*align = a.align;
+			}
 			break;
 		default:
 			return;
@@ -681,7 +690,7 @@ declaratortypes(struct scope *s, struct list *result, char **name, struct scope 
 }
 
 static struct qualtype
-declarator(struct scope *s, struct qualtype base, char **name, struct scope **funcscope, bool allowabstract)
+declarator(struct scope *s, struct qualtype base, char **name, int *align, struct scope **funcscope, bool allowabstract)
 {
 	struct type *t;
 	enum typequal tq;
@@ -690,7 +699,7 @@ declarator(struct scope *s, struct qualtype base, char **name, struct scope **fu
 
 	if (funcscope)
 		*funcscope = NULL;
-	declaratortypes(s, &result, name, funcscope, allowabstract);
+	declaratortypes(s, &result, name, align, funcscope, allowabstract);
 	for (l = result.prev; l != &result; l = prev) {
 		prev = l->prev;
 		t = listelement(l, struct type, link);
@@ -757,7 +766,7 @@ parameter(struct scope *s)
 		error(&tok.loc, "no type in parameter declaration");
 	if (sc && sc != SCREGISTER)
 		error(&tok.loc, "parameter declaration has invalid storage-class specifier");
-	t = declarator(s, t, &name, NULL, true);
+	t = declarator(s, t, &name, NULL, NULL, true);
 	t.type = typeadjust(t.type, &t.qual);
 	d = mkdecl(name, DECLOBJECT, t.type, t.qual, LINKNONE);
 	d->u.obj.storage = SDAUTO;
@@ -906,7 +915,7 @@ structdecl(struct scope *s, struct structbuilder *b)
 			width = intconstexpr(s, false);
 			addmember(b, base, NULL, 0, width);
 		} else {
-			mt = declarator(s, base, &name, NULL, false);
+			mt = declarator(s, base, &name, &align, NULL, false);
 			width = consume(TCOLON) ? intconstexpr(s, false) : -1;
 			addmember(b, mt, name, align, width);
 		}
@@ -925,7 +934,7 @@ typename(struct scope *s, enum typequal *tq, struct expr **toeval)
 
 	t = declspecs(s, NULL, NULL, NULL);
 	if (t.type) {
-		t = declarator(s, t, NULL, NULL, true);
+		t = declarator(s, t, NULL, NULL, NULL, true);
 		if (tq)
 			*tq |= t.qual;
 		if (toeval)
@@ -1046,7 +1055,7 @@ decl(struct scope *s, struct func *f)
 		return true;
 	}
 	for (;;) {
-		qt = declarator(s, base, &name, &funcscope, false);
+		qt = declarator(s, base, &name, NULL, &funcscope, false);
 		t = qt.type;
 		tq = qt.qual;
 		if (consume(T__ASM__)) {
