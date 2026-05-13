@@ -1,3 +1,16 @@
+diff --git a/sys/_types.h b/sys/_types.h
+index fe345b43d5eb..6b70b8dc6e32 100644
+--- a/sys/_types.h
++++ b/sys/_types.h
+@@ -183,7 +183,7 @@ typedef struct {
+ 	    __attribute__((__aligned__(__alignof__(long long))));
+ #ifndef _STANDALONE
+ 	long double __max_align2
+-	    __attribute__((__aligned__(__alignof__(long long))));
++	    __attribute__((__aligned__(__alignof__(long double))));
+ #endif
+ } __max_align_t;
+ 
 diff --git a/x86/ucontext.h b/x86/ucontext.h
 index 00edc8c16bce..6abdc7c848d9 100644
 --- a/x86/ucontext.h
