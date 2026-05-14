@@ -10,7 +10,7 @@ tasks:
     doas patch -d /usr/include < cproc/.builds/openbsd.diff
 - build: |
     cd cproc
-    ./configure --with-as=gas
+    ./configure
     make all check bootstrap check-stage2
 triggers:
 - action: email

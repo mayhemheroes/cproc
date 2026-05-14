@@ -208,7 +208,7 @@ case "$target" in
 	;;
 *-*openbsd*)
 	: ${DEFAULT_LDSO:=/usr/libexec/ld.so}
-	test "$host" = "$target" && : ${DEFAULT_CPP:=/usr/libexec/cpp}
+	test "$host" = "$target" && : ${DEFAULT_CPP:=/usr/libexec/cpp} ${DEFAULT_AS:=gas}
 	startfiles='"-l", ":crt0.o", "-l", ":crtbegin.o"'
 	endfiles='"-l", "c", "-l", ":crtend.o"'
 	linkflags='"-L", "/usr/lib", "-nopie",'
