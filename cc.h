@@ -295,6 +295,7 @@ int tokenget(const void *, size_t);
 void tokenprint(const struct token *, FILE *);
 char *tokenstr(enum tokenkind);
 char *tokencheck(const struct token *, enum tokenkind, const char *);
+void diagloc(const struct location *);
 noreturn void error(const struct location *, const char *, ...);
 
 /* scan */

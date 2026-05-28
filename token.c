@@ -155,11 +155,19 @@ tokencheck(const struct token *t, enum tokenkind kind, const char *msg)
 	return t->lit;
 }
 
-void error(const struct location *loc, const char *fmt, ...)
+void
+diagloc(const struct location *loc)
+{
+	fprintf(stderr, "%s:%zu:%zu: ", loc->file, loc->line, loc->col);
+}
+
+void
+error(const struct location *loc, const char *fmt, ...)
 {
 	va_list ap;
 
-	fprintf(stderr, "%s:%zu:%zu: error: ", loc->file, loc->line, loc->col);
+	diagloc(loc);
+	fputs("error: ", stderr);
 	va_start(ap, fmt);
 	vfprintf(stderr, fmt, ap);
 	va_end(ap);

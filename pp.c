@@ -368,7 +368,8 @@ directive(void)
 		break;
 	case TERROR:
 	case TWARNING:
-		fprintf(stderr, "%s:%zu:%zu: %s directive:", tok.loc.file, tok.loc.line, tok.loc.col, kind == TERROR ? "#error" : "#warning");
+		diagloc(&tok.loc);
+		fprintf(stderr, "%s directive:", kind == TERROR ? "#error" : "#warning");
 		scan(&tok);
 		while (tok.kind != TNEWLINE && tok.kind != TEOF) {
 			tokenprint(&tok, stderr);
