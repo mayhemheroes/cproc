@@ -305,13 +305,15 @@ directive(void)
 {
 	struct location newloc;
 	enum ppflags oldflags;
+	enum tokenkind kind;
 
 	scan(&tok);
 	if (tok.kind == TNEWLINE)
 		return;  /* empty directive */
 	oldflags = ppflags;
 	ppflags |= PPNEWLINE;
-	switch (tok.kind) {
+	kind = tok.kind;
+	switch (kind) {
 	case TNUMBER:
 		goto line;  /* gcc line markers */
 	case TIF:
@@ -365,22 +367,16 @@ directive(void)
 		scansetloc(newloc);
 		break;
 	case TERROR:
-		fprintf(stderr, "%s:%zu:%zu: #error directive:", tok.loc.file, tok.loc.line, tok.loc.col);
-		scan(&tok);
-		while (tok.kind != TNEWLINE && tok.kind != TEOF) {
-			tokenprint(&tok, stderr);
-			scan(&tok);
-		}
-		fputc('\n', stderr);
-		exit(1);
 	case TWARNING:
-		fprintf(stderr, "%s:%zu:%zu: #warning directive:", tok.loc.file, tok.loc.line, tok.loc.col);
+		fprintf(stderr, "%s:%zu:%zu: %s directive:", tok.loc.file, tok.loc.line, tok.loc.col, kind == TERROR ? "#error" : "#warning");
 		scan(&tok);
 		while (tok.kind != TNEWLINE && tok.kind != TEOF) {
 			tokenprint(&tok, stderr);
 			scan(&tok);
 		}
 		fputc('\n', stderr);
+		if (kind == TERROR)
+			exit(1);
 		break;
 	case TPRAGMA:
 		while (tok.kind != TNEWLINE && tok.kind != TEOF)
