@@ -1,0 +1,16 @@
+project: cproc
+target: cproc-qbe
+
+# File-input (CLI) target: feed the fuzz bytes as a C source file to cproc-qbe — the
+# cproc binary that PARSES C and emits QBE IR. The whole front end (scanner, preprocessor,
+# parser, type/decl/expr/stmt analysis) and the QBE backend run on the input. Not libFuzzer:
+# the natural fuzz surface is the compiler on a source file. @@ is the input-file placeholder.
+# Ported from the old integration's file-input target (old path /cproc/cproc-qbe on a C source file).
+cmds:
+  - cmd: /mayhem/cproc-qbe @@
+    # cproc never frees by design (it reclaims memory at process exit), so LeakSanitizer would flag
+    # benign "leaks" on nearly every input. build.sh bakes detect_leaks=0 into the binary; this env
+    # documents it and covers any invocation that ignores the baked default. ASan's overflow/UAF
+    # checks and all of UBSan remain on and halting.
+testsuite:
+  - file:///mayhem/mayhem/testsuite
