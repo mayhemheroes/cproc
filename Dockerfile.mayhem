@@ -1,0 +1,14 @@
+FROM --platform=linux/amd64 ubuntu:20.04 as builder
+RUN apt-get update
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y make gcc
+
+COPY . /cproc
+WORKDIR /cproc/qbe
+RUN make
+ENV PATH=/cproc/qbe/obj:$PATH
+WORKDIR /cproc
+RUN make
+RUN make install DESTDIR=/install
+
+FROM ubuntu:20.04 as package
+COPY --from=builder /install /install
